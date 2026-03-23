@@ -1,0 +1,83 @@
+// SimpleMovement.cpp
+#include "SimpleMovement.h"
+#include "GameFramework/CharacterMovementComponent.h"
+
+ASimpleMovement::ASimpleMovement()
+{
+    PrimaryActorTick.bCanEverTick = true;
+
+    // Создание камеры от третьего лица
+    CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
+    CameraBoom->SetupAttachment(RootComponent);
+    CameraBoom->TargetArmLength = 400.0f;
+    CameraBoom->bUsePawnControlRotation = true;
+    CameraBoom->bEnableCameraLag = true;
+    CameraBoom->CameraLagSpeed = 10.0f;
+
+    FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
+    FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
+    FollowCamera->bUsePawnControlRotation = false;
+
+    // Настройка движения
+    GetCharacterMovement()->bOrientRotationToMovement = true;
+    GetCharacterMovement()->RotationRate = FRotator(0.0f, 540.0f, 0.0f);
+    GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+}
+
+void ASimpleMovement::BeginPlay()
+{
+    Super::BeginPlay();
+}
+
+void ASimpleMovement::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+{
+    Super::SetupPlayerInputComponent(PlayerInputComponent);
+
+    // Привязка осей движения
+    PlayerInputComponent->BindAxis("MoveForward", this, &ASimpleMovement::MoveForward);
+    PlayerInputComponent->BindAxis("MoveRight", this, &ASimpleMovement::MoveRight);
+    PlayerInputComponent->BindAxis("Turn", this, &ASimpleMovement::Turn);
+    PlayerInputComponent->BindAxis("LookUp", this, &ASimpleMovement::LookUp);
+
+    // Привязка бега
+    PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &ASimpleMovement::StartSprint);
+    PlayerInputComponent->BindAction("Sprint", IE_Released, this, &ASimpleMovement::StopSprint);
+}
+
+void ASimpleMovement::MoveForward(float Value)
+{
+    if (Value != 0.0f)
+    {
+        AddMovementInput(GetActorForwardVector(), Value);
+    }
+}
+
+void ASimpleMovement::MoveRight(float Value)
+{
+    if (Value != 0.0f)
+    {
+        AddMovementInput(GetActorRightVector(), Value);
+    }
+}
+
+void ASimpleMovement::Turn(float Value)
+{
+    AddControllerYawInput(Value);
+}
+
+void ASimpleMovement::LookUp(float Value)
+{
+    AddControllerPitchInput(Value);
+}
+
+void ASimpleMovement::StartSprint()
+{
+    bIsSprinting = true;
+    GetCharacterMovement()->MaxWalkSpeed = SprintSpeed;
+}
+
+void ASimpleMovement::StopSprint()
+{
+    bIsSprinting = false;
+    GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+}
